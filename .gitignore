@@ -8,3 +8,6 @@ calibration.json
 !.vscode/extensions.json
 head_calibration.json
 settings.json
+build/
+dist/
+app.log

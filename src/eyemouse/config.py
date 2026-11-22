@@ -52,7 +52,9 @@ CONFIG = Config()
 import json as _json  # noqa: E402
 from pathlib import Path as _Path  # noqa: E402
 
-SETTINGS_FILE = _Path(__file__).resolve().parents[2] / "settings.json"
+from .paths import DATA_DIR as _DATA_DIR  # noqa: E402
+
+SETTINGS_FILE = _DATA_DIR / "settings.json"
 _SAVED = ("control_mode", "click_method", "sensitivity", "smoothing")
 
 

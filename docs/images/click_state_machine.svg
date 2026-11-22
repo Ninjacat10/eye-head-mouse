@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="300" viewBox="0 0 960 300" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#64748b"/></marker>
+    <style>
+      .t{font-size:16px;font-weight:700}
+      .s{font-size:12px;fill:#334155}
+      .l{stroke:#64748b;stroke-width:1.6;fill:none;marker-end:url(#a)}
+    </style>
+  </defs>
+  <rect width="960" height="300" rx="18" fill="#ffffff"/>
+  <text x="480" y="32" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#0f172a">Click state machine: only act when sure</text>
+
+  <rect x="30" y="80" width="170" height="64" rx="12" fill="#dbeafe" stroke="#3b82f6"/>
+  <text class="t" x="115" y="108" text-anchor="middle" fill="#1d4ed8">HOVER</text>
+  <text class="s" x="115" y="128" text-anchor="middle">cursor follows you</text>
+  <rect x="270" y="80" width="170" height="64" rx="12" fill="#dcfce7" stroke="#16a34a"/>
+  <text class="t" x="355" y="108" text-anchor="middle" fill="#15803d">ARMING</text>
+  <text class="s" x="355" y="128" text-anchor="middle">cursor frozen, 0.5 s timer</text>
+  <rect x="510" y="80" width="170" height="64" rx="12" fill="#f8fafc" stroke="#0f172a"/>
+  <text class="t" x="595" y="108" text-anchor="middle" fill="#0f172a">CLICK</text>
+  <text class="s" x="595" y="128" text-anchor="middle">fires once, white flash</text>
+  <rect x="750" y="80" width="180" height="64" rx="12" fill="#bbf7d0" stroke="#15803d"/>
+  <text class="t" x="840" y="108" text-anchor="middle" fill="#166534">COOLDOWN</text>
+  <text class="s" x="840" y="128" text-anchor="middle">relax face to re-arm</text>
+
+  <path class="l" d="M200 112 L268 112"/>
+  <text class="s" x="234" y="62" text-anchor="middle">gesture sure</text>
+  <text class="s" x="234" y="76" text-anchor="middle">5 frames</text>
+  <path class="l" d="M440 112 L508 112"/>
+  <text class="s" x="474" y="76" text-anchor="middle">held 0.5 s</text>
+  <path class="l" d="M680 112 L748 112"/>
+  <path class="l" d="M840 144 L840 206 L100 206 L100 146"/>
+  <text class="s" x="478" y="224" text-anchor="middle">neutral face (or head up) confirmed for 5 frames</text>
+  <path class="l" d="M355 146 L355 178 L140 178 L140 146"/>
+  <text class="s" x="248" y="194" text-anchor="middle">released early</text>
+
+  <rect x="300" y="240" width="360" height="48" rx="10" fill="#fef3c7" stroke="#d97706"/>
+  <text x="480" y="261" text-anchor="middle" style="font-size:14px;font-weight:700;fill:#b45309">UNCERTAIN (any state)</text>
+  <text class="s" x="480" y="279" text-anchor="middle">confidence below 95%: do nothing, cursor frozen</text>
+</svg>

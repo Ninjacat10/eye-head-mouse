@@ -8,6 +8,10 @@ rebuild the same network in Keras and copy every trained weight in by name:
       -> GlobalAveragePooling2D
       -> Dense(100, relu)
       -> Dense(2, softmax, no bias)   -> [p_head_up, p_head_down]
+
+At runtime the app uses models/head_model.onnx (exported once by
+tools/export_onnx.py, identical output) with onnxruntime, so the installed app
+does not need TensorFlow. The Keras rebuild below is only used for that export.
 """
 import json
 import os
@@ -17,9 +21,12 @@ os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")  # hide TF info spam
 
 import cv2
 import numpy as np
-import tensorflow as tf
 
-MODEL_DIR = Path(__file__).resolve().parents[2] / "models" / "head_model_tfjs"
+from .paths import MODELS_DIR
+
+MODEL_DIR = MODELS_DIR / "head_model_tfjs"
+ONNX_FILE = MODELS_DIR / "head_model.onnx"
+LABELS = ["head up mouse hovering", "head down for click detection"]
 IMAGE_SIZE = 224
 
 # Index of each class in the model's output (from metadata.json labels)
@@ -42,7 +49,8 @@ def _read_tfjs_weights(model_dir: Path) -> dict:
     return weights
 
 
-def _build_model(weights: dict) -> tf.keras.Model:
+def _build_model(weights: dict):
+    import tensorflow as tf  # only needed for the one-time ONNX export
     base = tf.keras.applications.MobileNetV2(
         input_shape=(IMAGE_SIZE, IMAGE_SIZE, 3),
         alpha=0.35,
@@ -77,12 +85,11 @@ def _build_model(weights: dict) -> tf.keras.Model:
 
 
 class HeadClassifier:
-    def __init__(self, model_dir: Path = MODEL_DIR):
-        self.model = _build_model(_read_tfjs_weights(model_dir))
-        self.labels = json.loads((model_dir / "metadata.json").read_text())["labels"]
-        # tf.function compiles the forward pass once -> much faster per frame
-        self._predict = tf.function(lambda x: self.model(x, training=False))
-        self._predict(tf.zeros((1, IMAGE_SIZE, IMAGE_SIZE, 3)))  # warm-up
+    def __init__(self, onnx_file: Path = ONNX_FILE):
+        import onnxruntime as ort
+        self.session = ort.InferenceSession(str(onnx_file), providers=["CPUExecutionProvider"])
+        self.input_name = self.session.get_inputs()[0].name
+        self.labels = LABELS
 
     @staticmethod
     def preprocess(frame_bgr: np.ndarray) -> np.ndarray:
@@ -97,7 +104,7 @@ class HeadClassifier:
 
     def predict(self, frame_bgr: np.ndarray) -> np.ndarray:
         """Return probabilities [p_head_up, p_head_down] for one mirrored frame."""
-        return self._predict(tf.constant(self.preprocess(frame_bgr))).numpy()[0]
+        return self.session.run(None, {self.input_name: self.preprocess(frame_bgr)})[0][0]
 
 
 if __name__ == "__main__":

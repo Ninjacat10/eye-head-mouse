@@ -18,7 +18,9 @@ from pathlib import Path
 
 import numpy as np
 
-HEAD_CALIB_FILE = Path(__file__).resolve().parents[2] / "head_calibration.json"
+from .paths import DATA_DIR
+
+HEAD_CALIB_FILE = DATA_DIR / "head_calibration.json"
 
 DEFAULT_COEF = np.array([[0.5, 0.5],      # intercepts
                          [4.0, 0.0],      # yaw   -> x

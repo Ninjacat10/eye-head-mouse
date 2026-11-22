@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#64748b"/></marker>
+    <style>
+      .t{font-size:15px;font-weight:600;fill:#0f172a}
+      .s{font-size:12px;fill:#334155}
+      .l{stroke:#64748b;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .pre{fill:#e0ecff;stroke:#3b82f6}
+      .mine{fill:#dcfce7;stroke:#16a34a}
+      .app{fill:#ede9fe;stroke:#7c3aed}
+      .io{fill:#f1f5f9;stroke:#64748b}
+      rect{stroke-width:1.4}
+    </style>
+  </defs>
+  <rect x="0" y="0" width="960" height="640" rx="18" fill="#ffffff"/>
+  <text x="480" y="34" text-anchor="middle" style="font-size:20px;font-weight:700;fill:#0f172a">Eye + Head Mouse: system architecture</text>
+
+  <rect class="io" x="400" y="56" width="160" height="50" rx="10"/>
+  <text class="t" x="480" y="78" text-anchor="middle">Webcam</text>
+  <text class="s" x="480" y="96" text-anchor="middle">OpenCV, 30 fps, mirrored</text>
+
+  <rect class="pre" x="110" y="146" width="340" height="56" rx="10"/>
+  <text class="t" x="280" y="170" text-anchor="middle">MediaPipe Face Mesh</text>
+  <text class="s" x="280" y="189" text-anchor="middle">478 landmarks + iris points (pretrained)</text>
+  <rect class="mine" x="510" y="146" width="340" height="56" rx="10"/>
+  <text class="t" x="680" y="170" text-anchor="middle">Head-pose CNN</text>
+  <text class="s" x="680" y="189" text-anchor="middle">MobileNetV2 + custom dense head, trained on my data</text>
+  <path class="l" d="M440 106 L300 144"/>
+  <path class="l" d="M520 106 L660 144"/>
+
+  <rect class="app" x="20" y="252" width="200" height="56" rx="10"/>
+  <text class="t" x="120" y="276" text-anchor="middle">Head pointer</text>
+  <text class="s" x="120" y="295" text-anchor="middle">nose yaw/pitch to screen</text>
+  <rect class="app" x="240" y="252" width="200" height="56" rx="10"/>
+  <text class="t" x="340" y="276" text-anchor="middle">Eye gaze mapper</text>
+  <text class="s" x="340" y="295" text-anchor="middle">iris features, poly ridge fit</text>
+  <rect class="app" x="460" y="252" width="220" height="56" rx="10"/>
+  <text class="t" x="570" y="276" text-anchor="middle">Gesture detector</text>
+  <text class="s" x="570" y="295" text-anchor="middle">open mouth = click, wink = right</text>
+  <rect class="app" x="700" y="252" width="240" height="56" rx="10"/>
+  <text class="t" x="820" y="276" text-anchor="middle">Confidence gate</text>
+  <text class="s" x="820" y="295" text-anchor="middle">p &#8805; 0.95 for 5 frames in a row</text>
+  <path class="l" d="M200 202 L130 250"/>
+  <path class="l" d="M280 202 L330 250"/>
+  <path class="l" d="M380 202 L540 250"/>
+  <path class="l" d="M720 202 L800 250"/>
+
+  <rect class="app" x="20" y="358" width="420" height="56" rx="10"/>
+  <text class="t" x="230" y="382" text-anchor="middle">One Euro filter + sensitivity</text>
+  <text class="s" x="230" y="401" text-anchor="middle">kills jitter when still, no lag when moving</text>
+  <rect class="app" x="460" y="358" width="480" height="56" rx="10"/>
+  <text class="t" x="700" y="382" text-anchor="middle">Click controller</text>
+  <text class="s" x="700" y="401" text-anchor="middle">0.5 s hold, grace period, cooldown, relax to re-arm</text>
+  <path class="l" d="M120 308 L170 356"/>
+  <path class="l" d="M340 308 L300 356"/>
+  <path class="l" d="M570 308 L620 356"/>
+  <path class="l" d="M820 308 L780 356"/>
+
+  <rect class="app" x="20" y="460" width="920" height="56" rx="10"/>
+  <text class="t" x="480" y="484" text-anchor="middle">Brain (state machine)</text>
+  <text class="s" x="480" y="503" text-anchor="middle">PAUSED / NO_FACE / UNCERTAIN / HOVER / ARMING / COOLDOWN  ·  modes: click, right, double, drag, scroll  ·  navigator menu</text>
+  <path class="l" d="M230 414 L230 458"/>
+  <path class="l" d="M700 414 L700 458"/>
+
+  <rect class="io" x="20" y="560" width="280" height="56" rx="10"/>
+  <text class="t" x="160" y="584" text-anchor="middle">Mouse + keyboard</text>
+  <text class="s" x="160" y="603" text-anchor="middle">pynput: move, click, drag, scroll</text>
+  <rect class="io" x="340" y="560" width="280" height="56" rx="10"/>
+  <text class="t" x="480" y="584" text-anchor="middle">Overlay</text>
+  <text class="s" x="480" y="603" text-anchor="middle">edge glow, menu, hidden from capture</text>
+  <rect class="io" x="660" y="560" width="280" height="56" rx="10"/>
+  <text class="t" x="800" y="584" text-anchor="middle">Control panel</text>
+  <text class="s" x="800" y="603" text-anchor="middle">start/stop, sliders, global hotkeys</text>
+  <path class="l" d="M160 516 L160 558"/>
+  <path class="l" d="M480 516 L480 558"/>
+  <path class="l" d="M800 516 L800 558"/>
+
+  <rect class="pre" x="610" y="60" width="16" height="12" rx="2"/><text class="s" x="632" y="71">pretrained model</text>
+  <rect class="mine" x="610" y="80" width="16" height="12" rx="2"/><text class="s" x="632" y="91">trained by me</text>
+  <rect class="app" x="760" y="60" width="16" height="12" rx="2"/><text class="s" x="782" y="71">app logic (Python)</text>
+  <rect class="io" x="760" y="80" width="16" height="12" rx="2"/><text class="s" x="782" y="91">input / output</text>
+</svg>

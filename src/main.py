@@ -17,7 +17,7 @@ import traceback
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 import cv2  # noqa: E402,F401
 import mediapipe  # noqa: E402,F401
-import tensorflow  # noqa: E402,F401
+import onnxruntime  # noqa: E402,F401
 
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication

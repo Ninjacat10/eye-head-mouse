@@ -11,7 +11,9 @@ from pathlib import Path
 
 import numpy as np
 
-CALIB_FILE = Path(__file__).resolve().parents[2] / "calibration.json"
+from .paths import DATA_DIR
+
+CALIB_FILE = DATA_DIR / "calibration.json"
 
 
 def _poly2(x):
