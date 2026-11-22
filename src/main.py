@@ -6,10 +6,18 @@ Threads:
   UI thread      Qt windows: overlay, control panel, calibration
   Worker thread  camera -> face mesh + head CNN -> confidence gate -> Brain
 """
+import os
 import queue
 import sys
 import time
 import traceback
+
+# IMPORTANT: load the ML libraries BEFORE PyQt6. On Windows, importing Qt first
+# makes MediaPipe's DLL fail with "DLL initialization routine failed".
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+import cv2  # noqa: E402,F401
+import mediapipe  # noqa: E402,F401
+import tensorflow  # noqa: E402,F401
 
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
