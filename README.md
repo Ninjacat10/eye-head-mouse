@@ -30,18 +30,18 @@ First time:
 
 | Do this | Result |
 |---|---|
-| Head up, look around | Cursor follows your eyes (blue edge glow) |
+| Point your nose (head mode) or look (eye mode) | Cursor follows (blue edge glow) |
 | Open mouth (or nod, in nod mode) and hold 0.5 s | Left click (green line fills around the screen, white flash) |
 | Wink one eye and hold 0.5 s | Right click (gesture mode). Normal blinks are ignored |
 | Relax face / lift head | Re-arms for the next click |
-| Model not sure (< 95 % for 5 frames) | Nothing happens, cursor frozen (amber glow) |
-| Look at the **Menu** tab (top centre) + nod | Opens the navigator menu |
+| Not sure (< 95 % / half-open mouth, for 5 frames) | Nothing happens, cursor frozen (amber glow) |
+| Point at the **Menu** tab (top centre) + click gesture | Opens the navigator menu |
 
 **Navigator menu:** Left / Right / Double click, Drag, Scroll, on-screen Keyboard, Voice typing,
-Task view, Show desktop, Back, Copy, Paste, Enter, Pause, Recalibrate, Sensitivity +/-, Smoothing +/-.
+Task view, Show desktop, Back, Copy, Paste, Recenter, Pause, Recalibrate, Sensitivity +/-, Smoothing +/-.
 
-- **Drag:** nod once to grab, move with your eyes, nod again to drop (orange glow while holding).
-- **Scroll:** cursor stays put; look at the top/bottom of the screen to scroll (purple bands). Nod to exit.
+- **Drag:** click gesture once to grab, move the cursor, click gesture again to drop (orange glow while holding).
+- **Scroll:** cursor stays put; point at the top/bottom of the screen to scroll (purple bands). Click gesture to exit.
 
 **Hotkeys:** `Ctrl+Alt+E` start/stop, `Ctrl+Alt+M` menu, `Ctrl+Alt+C` recalibrate, `Ctrl+Alt+R` recenter, `Ctrl+Alt+Q` quit.
 
