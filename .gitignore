@@ -6,3 +6,5 @@ calibration.json
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+head_calibration.json
+settings.json

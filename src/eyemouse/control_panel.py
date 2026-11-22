@@ -2,14 +2,18 @@
 
 Global hotkeys (work even when the cursor is out of control):
   Ctrl+Alt+E  start / stop tracking      Ctrl+Alt+M  open / close menu
-  Ctrl+Alt+C  recalibrate                Ctrl+Alt+Q  quit
+  Ctrl+Alt+C  recalibrate                Ctrl+Alt+R  recenter (head mode)
+  Ctrl+Alt+Q  quit
 """
 import keyboard
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
-from PyQt6.QtWidgets import (QCheckBox, QHBoxLayout, QLabel, QPushButton, QSlider,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel,
+                             QPushButton, QSlider, QVBoxLayout, QWidget)
 
-from .config import CONFIG
+from .config import CONFIG, save_settings
+
+POINTER_MODES = [("head", "Head - point with your nose"), ("eye", "Eyes - look where you want")]
+CLICK_METHODS = [("gesture", "Open mouth = click, wink = right click"), ("nod", "Head-down nod (your model)")]
 from .state_manager import Status
 
 STATE_TEXT = {
@@ -27,6 +31,7 @@ class Hotkeys(QObject):
     toggle = pyqtSignal()
     menu = pyqtSignal()
     recal = pyqtSignal()
+    recenter = pyqtSignal()
     quit = pyqtSignal()
 
     def __init__(self):
@@ -34,6 +39,7 @@ class Hotkeys(QObject):
         keyboard.add_hotkey("ctrl+alt+e", self.toggle.emit)
         keyboard.add_hotkey("ctrl+alt+m", self.menu.emit)
         keyboard.add_hotkey("ctrl+alt+c", self.recal.emit)
+        keyboard.add_hotkey("ctrl+alt+r", self.recenter.emit)
         keyboard.add_hotkey("ctrl+alt+q", self.quit.emit)
 
     @staticmethod
@@ -44,14 +50,22 @@ class Hotkeys(QObject):
 class ControlPanel(QWidget):
     start_stop = pyqtSignal()
     recalibrate = pyqtSignal()
+    recenter = pyqtSignal()
     menu = pyqtSignal()
+    settings_changed = pyqtSignal()
     capture_hidden = pyqtSignal(bool)
     quit_app = pyqtSignal()
 
     def __init__(self):
         super().__init__(None, Qt.WindowType.WindowStaysOnTopHint)
         self.setWindowTitle("Eye + Head Mouse")
-        self.setFixedWidth(340)
+        self.setFixedWidth(380)
+
+        self.pointer_box = self._combo(POINTER_MODES, CONFIG.control_mode, "control_mode")
+        self.click_box = self._combo(CLICK_METHODS, CONFIG.click_method, "click_method")
+        form = QFormLayout()
+        form.addRow("Cursor:", self.pointer_box)
+        form.addRow("Click:", self.click_box)
 
         self.state_lbl = QLabel("Loading models...")
         self.state_lbl.setStyleSheet("font-size:16px; font-weight:600;")
@@ -69,10 +83,14 @@ class ControlPanel(QWidget):
 
         recal_btn = QPushButton("Recalibrate")
         recal_btn.clicked.connect(self.recalibrate.emit)
+        recenter_btn = QPushButton("Recenter")
+        recenter_btn.setToolTip("Head mode: point your nose at the screen centre, then press")
+        recenter_btn.clicked.connect(self.recenter.emit)
         menu_btn = QPushButton("Menu")
         menu_btn.clicked.connect(self.menu.emit)
         row = QHBoxLayout()
         row.addWidget(recal_btn)
+        row.addWidget(recenter_btn)
         row.addWidget(menu_btn)
 
         self.sens = self._slider(50, 200, int(CONFIG.sensitivity * 100), self._on_sens)
@@ -85,17 +103,32 @@ class ControlPanel(QWidget):
         hide.setChecked(True)
         hide.toggled.connect(self.capture_hidden.emit)
 
-        keys = QLabel("Ctrl+Alt+E start/stop   Ctrl+Alt+M menu\nCtrl+Alt+C recalibrate   Ctrl+Alt+Q quit")
+        keys = QLabel("Ctrl+Alt+E start/stop   Ctrl+Alt+M menu   Ctrl+Alt+R recenter\n"
+                      "Ctrl+Alt+C recalibrate   Ctrl+Alt+Q quit")
         keys.setStyleSheet("color:#888; font-size:11px;")
         quit_btn = QPushButton("Quit")
         quit_btn.clicked.connect(self.quit_app.emit)
 
         lay = QVBoxLayout(self)
+        lay.addLayout(form)
         for w in (self.state_lbl, self.detail_lbl, self.msg_lbl, self.start_btn):
             lay.addWidget(w)
         lay.addLayout(row)
         for w in (self.sens_lbl, self.sens, self.smooth_lbl, self.smooth, hide, keys, quit_btn):
             lay.addWidget(w)
+
+    def _combo(self, options, current, attr):
+        box = QComboBox()
+        for key, label in options:
+            box.addItem(label, key)
+        box.setCurrentIndex(max(0, [k for k, _ in options].index(current)))
+
+        def changed(_i):
+            setattr(CONFIG, attr, box.currentData())
+            save_settings()
+            self.settings_changed.emit()
+        box.currentIndexChanged.connect(changed)
+        return box
 
     @staticmethod
     def _slider(lo, hi, val, cb):
@@ -128,8 +161,7 @@ class ControlPanel(QWidget):
         text, colour = STATE_TEXT.get(s.state, (s.state, "#000"))
         self.state_lbl.setText(f"<span style='color:{colour}'>●</span> {text}")
         self.detail_lbl.setText(
-            f"Mode: {s.mode}{'  (holding)' if s.holding else ''}   |   "
-            f"up {s.probs[0]:.2f}  down {s.probs[1]:.2f}   |   {s.fps:.0f} fps")
+            f"Mode: {s.mode}{'  (holding)' if s.holding else ''}   |   {s.fps:.0f} fps\n{s.detail}")
         self.msg_lbl.setText(s.message)
 
     def show_error(self, text):

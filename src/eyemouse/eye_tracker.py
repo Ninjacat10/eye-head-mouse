@@ -18,13 +18,19 @@ L_EYE = dict(c1=362, c2=263, top=386, bottom=374, iris=473)
 NOSE_TIP = 1
 FACE_LEFT, FACE_RIGHT = 234, 454
 FOREHEAD, CHIN = 10, 152
+LIP_TOP, LIP_BOTTOM = 13, 14            # inner lips
+MOUTH_LEFT, MOUTH_RIGHT = 61, 291       # mouth corners
 
 
 @dataclass
 class EyeResult:
-    features: np.ndarray      # shape (4,)
-    openness: float           # eyelid gap / eye width (blink if small)
+    features: np.ndarray      # shape (4,) for EYE mode
+    openness: float           # eyelid gap / eye width, both eyes averaged
     landmarks: np.ndarray     # (478, 2) pixel coords, for drawing/debug
+    head: np.ndarray = None   # (yaw, pitch) proxies for HEAD mode, jaw-independent
+    mouth: float = 0.0        # inner lip gap / mouth width (open mouth = big)
+    eye_a: float = 0.0        # openness of each eye separately (for winks)
+    eye_b: float = 0.0
 
 
 def _eye_features(pts, eye):
@@ -72,7 +78,19 @@ class EyeTracker:
         hy = (pts[NOSE_TIP][1] - mid_y) / face_h
 
         feats = np.array([(rx + lx) / 2, (ry + ly) / 2, hx, hy])
-        return EyeResult(features=feats, openness=(ro + lo) / 2, landmarks=pts)
+
+        # HEAD mode pose: nose vs. cheek centre (yaw) and nose vs. eye line (pitch),
+        # both scaled by face width. Uses no chin/jaw points, so opening your mouth
+        # to click does NOT move the cursor.
+        eye_line_y = np.mean([pts[i][1] for i in (R_EYE["c1"], R_EYE["c2"], L_EYE["c1"], L_EYE["c2"])])
+        yaw = (pts[NOSE_TIP][0] - centre[0]) / face_w
+        pitch = (pts[NOSE_TIP][1] - eye_line_y) / face_w
+
+        mouth_w = np.linalg.norm(pts[MOUTH_RIGHT] - pts[MOUTH_LEFT]) + 1e-6
+        mouth = np.linalg.norm(pts[LIP_BOTTOM] - pts[LIP_TOP]) / mouth_w
+
+        return EyeResult(features=feats, openness=(ro + lo) / 2, landmarks=pts,
+                         head=np.array([yaw, pitch]), mouth=mouth, eye_a=ro, eye_b=lo)
 
     def close(self):
         self.mesh.close()

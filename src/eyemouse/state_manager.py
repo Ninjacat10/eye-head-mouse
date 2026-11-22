@@ -20,6 +20,7 @@ from .config import CONFIG
 from .cursor_controller import KEY, CursorController
 from .gaze_mapper import GazeMapper
 from .head_classifier import HEAD_DOWN, HEAD_UP
+from .head_pointer import HeadMapper
 from .scroll_drag import Dragger, Mode, Scroller
 from .smoothing import GazeSmoother
 
@@ -29,7 +30,7 @@ MENU_ITEMS = [
     ("drag", "Drag"), ("scroll", "Scroll"),
     ("osk", "Keyboard"), ("voice", "Voice typing"), ("taskview", "Task view"),
     ("desktop", "Show desktop"), ("back", "Back"),
-    ("copy", "Copy"), ("paste", "Paste"), ("enter", "Enter"),
+    ("copy", "Copy"), ("paste", "Paste"), ("recenter", "Recenter"),
     ("pause", "Pause"), ("recal", "Recalibrate"),
     ("sens_dn", "Sensitivity -"), ("sens_up", "Sensitivity +"),
     ("smooth_dn", "Smoothing -"), ("smooth_up", "Smoothing +"), ("close", "Close menu"),
@@ -76,6 +77,15 @@ class Status:
     fps: float = 0.0
     face: bool = False
     message: str = ""
+    detail: str = ""
+
+
+def _fmt_detail(probs, gesture_values):
+    if CONFIG.click_method == "gesture" and gesture_values:
+        v = gesture_values
+        return (f"mouth {v['mouth']:.2f} (click at {v['mouth_thr']:.2f})   "
+                f"eyes {v['eye_a']:.2f} / {v['eye_b']:.2f}")
+    return f"head up {probs[0]:.2f}  down {probs[1]:.2f}"
 
 
 class Brain:
@@ -87,6 +97,10 @@ class Brain:
         self.smoother = GazeSmoother()
         self.mapper = GazeMapper()
         self.mapper.load()
+        self.head = HeadMapper()
+        self.head.load()
+        self.recenter_next = False
+        self.pending_button = "left"
         self.mode = Mode.CLICK
         self.paused = True            # start paused; press Start in the panel
         self.calibrating = False
@@ -94,7 +108,19 @@ class Brain:
         self.flash_until = 0.0
         self.last_t = time.monotonic()
         self.requests = []            # things the UI thread must do ("recalibrate")
-        self.message = "" if self.mapper.ready else "Not calibrated - press Recalibrate"
+
+    @property
+    def ready(self):
+        """Head mode works with default gains; eye mode needs a calibration."""
+        return CONFIG.control_mode == "head" or self.mapper.ready
+
+    @property
+    def message(self):
+        if CONFIG.control_mode == "eye" and not self.mapper.ready:
+            return "Eye mode is not calibrated - press Recalibrate"
+        if CONFIG.control_mode == "head" and not self.head.calibrated:
+            return "Head mode: using default settings. Recalibrate for best accuracy."
+        return ""
 
     # --- controls called from the UI / hotkeys ----------------------------
     def set_paused(self, paused):
@@ -102,29 +128,45 @@ class Brain:
         self.clicks.cancel()
         self.dragger.cancel(self.cursor)
         self.smoother.reset()
+        if not paused and CONFIG.control_mode == "head" and not self.head.calibrated:
+            self.recenter_next = True  # default gains: wherever you point at start = centre
+
+    def recenter(self):
+        self.recenter_next = True
 
     def toggle_menu(self):
         self.menu_open = not self.menu_open
         self.clicks.cancel()
 
     # --- per frame --------------------------------------------------------
-    def update(self, gate, eye, probs, fps):
+    def update(self, gate, eye, probs, fps, button=None, gesture_values=None):
+        """gate: confident UP/DOWN/None from the head model OR the gesture detector.
+        button: which click a DOWN means ("left" / "right"); None = left."""
         now = time.monotonic()
         dt, self.last_t = now - self.last_t, now
-        st = Status(calibrated=self.mapper.ready, probs=tuple(float(p) for p in probs),
-                    fps=fps, face=eye is not None)
+        st = Status(calibrated=self.ready, probs=tuple(float(p) for p in probs),
+                    fps=fps, face=eye is not None, detail=_fmt_detail(probs, gesture_values))
 
-        if self.paused or self.calibrating or not self.mapper.ready:
+        if eye is not None and self.recenter_next and not self.calibrating:
+            self.head.recenter(eye.head)
+            self.smoother.reset()
+            self.recenter_next = False
+
+        if self.paused or self.calibrating or not self.ready:
             st.state = "PAUSED"
             self._fill(st, now)
             return st
 
-        # Gaze -> smoothed normalised point (None while blinking / no face)
+        # Pointer -> smoothed normalised point (None = hold still)
         gaze = None
-        if eye is not None and eye.openness >= CONFIG.blink_ratio:
-            gx, gy = self.mapper.predict(eye.features)
-            gaze = self.smoother(gx, gy, now)
+        if eye is not None:
+            if CONFIG.control_mode == "head":
+                gaze = self.smoother(*self.head.predict(eye.head), now)
+            elif eye.openness >= CONFIG.blink_ratio:   # eye mode freezes on blinks
+                gaze = self.smoother(*self.mapper.predict(eye.features), now)
 
+        if gate == HEAD_DOWN and not self.clicks.armed:
+            self.pending_button = button or "left"   # remember which gesture started it
         fire = self.clicks.update(gate, now, HEAD_UP, HEAD_DOWN)
 
         if eye is None:
@@ -176,7 +218,7 @@ class Brain:
             self.menu_open = True
             return
         if self.mode == Mode.CLICK:
-            self.cursor.click(nx, ny)
+            self.cursor.click(nx, ny, self.pending_button)   # mouth = left, wink = right
         elif self.mode == Mode.RIGHT:
             self.cursor.click(nx, ny, "right")
             self.mode = Mode.CLICK
@@ -211,8 +253,8 @@ class Brain:
             c.hotkey(KEY.ctrl, "c")
         elif item == "paste":
             c.hotkey(KEY.ctrl, "v")
-        elif item == "enter":
-            c.hotkey(KEY.enter)
+        elif item == "recenter":
+            self.recenter()
         elif item == "pause":
             self.requests.append("pause")
         elif item == "recal":

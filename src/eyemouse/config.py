@@ -34,5 +34,39 @@ class Config:
     # The "Menu" tab at the top-centre of the screen (normalised 0..1 coords)
     menu_tab: tuple = (0.43, 0.0, 0.14, 0.05)   # x, y, w, h
 
+    # What moves the cursor:  "head" = nose pointing,  "eye" = eye gaze
+    control_mode: str = "head"
+    # What clicks:  "gesture" = open mouth / wink,  "nod" = your head-down model
+    click_method: str = "gesture"
+
+    # Gesture thresholds (relative to your neutral face from calibration)
+    mouth_open_delta: float = 0.25  # lip gap / mouth width above neutral = "open"
+    eye_closed_frac: float = 0.5    # eye below 50% of its normal openness = shut
+    eye_open_frac: float = 0.75     # other eye above 75% = open (so it is a wink, not a blink)
+    wink_right_click: bool = True
+
 
 CONFIG = Config()
+
+# --- remember the user's choices between runs ------------------------------
+import json as _json  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+SETTINGS_FILE = _Path(__file__).resolve().parents[2] / "settings.json"
+_SAVED = ("control_mode", "click_method", "sensitivity", "smoothing")
+
+
+def load_settings():
+    try:
+        for k, v in _json.loads(SETTINGS_FILE.read_text()).items():
+            if k in _SAVED:
+                setattr(CONFIG, k, v)
+    except (OSError, ValueError):
+        pass
+
+
+def save_settings():
+    try:
+        SETTINGS_FILE.write_text(_json.dumps({k: getattr(CONFIG, k) for k in _SAVED}))
+    except OSError:
+        pass

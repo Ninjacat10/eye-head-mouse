@@ -1,6 +1,14 @@
 # Eye + Head Mouse
 
-Hands-free mouse for Windows: **your eyes move the cursor**, a **confident head-down nod clicks**.
+Hands-free mouse for Windows. Two ways to point, two ways to click (pick in the control panel):
+
+| Cursor | Click |
+|---|---|
+| **Head** (default): point your nose at the screen | **Gestures** (default): open mouth = left click, wink = right click |
+| **Eyes**: look where you want | **Nod**: your Teachable Machine head-down model |
+
+Head mode is far steadier than eye mode and reaches the corners easily. Gestures do not move
+your head, so the cursor stays put while you click.
 
 ## Run it
 
@@ -12,7 +20,10 @@ Double-click `run.bat`, or in a VS Code terminal:
 
 First time:
 1. Wait for the control panel to say **Paused** (models take ~5 s to load).
-2. Click **Recalibrate**, keep your head up, and follow the 9 dots with your eyes.
+2. Head mode works straight away (wherever you point when you press Start = centre).
+   For best accuracy click **Recalibrate** and point your nose at the 9 dots with a relaxed face
+   (this also learns your neutral eyes/mouth for the gestures). Press **Recenter** / `Ctrl+Alt+R`
+   any time the cursor drifts.
 3. Click **Start tracking** (or press `Ctrl+Alt+E`).
 
 ## How to use
@@ -20,8 +31,9 @@ First time:
 | Do this | Result |
 |---|---|
 | Head up, look around | Cursor follows your eyes (blue edge glow) |
-| Head down and hold 0.5 s | Click (green line fills around the screen, white flash) |
-| Lift head | Re-arms for the next click |
+| Open mouth (or nod, in nod mode) and hold 0.5 s | Left click (green line fills around the screen, white flash) |
+| Wink one eye and hold 0.5 s | Right click (gesture mode). Normal blinks are ignored |
+| Relax face / lift head | Re-arms for the next click |
 | Model not sure (< 95 % for 5 frames) | Nothing happens, cursor frozen (amber glow) |
 | Look at the **Menu** tab (top centre) + nod | Opens the navigator menu |
 
@@ -31,7 +43,7 @@ Task view, Show desktop, Back, Copy, Paste, Enter, Pause, Recalibrate, Sensitivi
 - **Drag:** nod once to grab, move with your eyes, nod again to drop (orange glow while holding).
 - **Scroll:** cursor stays put; look at the top/bottom of the screen to scroll (purple bands). Nod to exit.
 
-**Hotkeys:** `Ctrl+Alt+E` start/stop, `Ctrl+Alt+M` menu, `Ctrl+Alt+C` recalibrate, `Ctrl+Alt+Q` quit.
+**Hotkeys:** `Ctrl+Alt+E` start/stop, `Ctrl+Alt+M` menu, `Ctrl+Alt+C` recalibrate, `Ctrl+Alt+R` recenter, `Ctrl+Alt+Q` quit.
 
 **Screen sharing:** the overlay, panel and calibration screen are hidden from Zoom/Teams/OBS/screenshots
 (`SetWindowDisplayAffinity`, Windows 10 2004+). Untick the box in the panel to show them.
@@ -51,6 +63,8 @@ webcam -> MediaPipe Face Mesh (iris + face landmarks) -> eye features -> gaze ma
 | `src/eyemouse/camera.py` | Webcam capture (mirrored) |
 | `src/eyemouse/head_classifier.py` | Rebuilds your TF.js model in Keras and loads its weights |
 | `src/eyemouse/confidence_gate.py` | "Only act when sure" rule |
+| `src/eyemouse/head_pointer.py` | Head mode: nose direction -> screen position, recenter |
+| `src/eyemouse/gestures.py` | Open-mouth / wink detection with the same "only when sure" rule |
 | `src/eyemouse/eye_tracker.py` | Iris-in-socket + head-pose features from MediaPipe |
 | `src/eyemouse/gaze_mapper.py` | Calibration regression: features -> screen position |
 | `src/eyemouse/smoothing.py` | One Euro filter + sensitivity |
@@ -69,4 +83,4 @@ nod, and the click lands where you were looking just before (`click_lookback_s`)
 ## Tuning
 
 Edit `src/eyemouse/config.py`: `confidence_threshold`, `frames_required`, `click_delay_s`,
-`cooldown_s`, `scroll_speed`, `blink_ratio`. Sensitivity and smoothing are live sliders.
+`cooldown_s`, `scroll_speed`, `blink_ratio`, `mouth_open_delta`, `eye_closed_frac`. Sensitivity and smoothing are live sliders.

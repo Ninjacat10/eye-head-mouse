@@ -23,6 +23,7 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
 
 from src.eyemouse.calibration_ui import CalibrationWindow
+from src.eyemouse.config import CONFIG, load_settings, save_settings
 from src.eyemouse.control_panel import ControlPanel, Hotkeys
 from src.eyemouse.overlay import Overlay, set_capture_hidden
 
@@ -49,6 +50,7 @@ class Worker(QThread):
             from src.eyemouse.camera import Camera
             from src.eyemouse.confidence_gate import ConfidenceGate
             from src.eyemouse.eye_tracker import EyeTracker
+            from src.eyemouse.gestures import GestureGate
             from src.eyemouse.head_classifier import HEAD_DOWN, HeadClassifier
             from src.eyemouse.state_manager import Brain
 
@@ -56,6 +58,7 @@ class Worker(QThread):
             tracker = EyeTracker()
             cam = Camera()
             gate = ConfidenceGate(2)
+            gestures = GestureGate()
             brain = Brain()
         except Exception as e:
             traceback.print_exc()
@@ -71,14 +74,21 @@ class Worker(QThread):
                 time.sleep(0.01)
                 continue
             eye = tracker.process(frame)
-            probs = clf.predict(frame)
-            g = gate.update(probs)
+            button, gvals = None, None
+            if CONFIG.click_method == "nod":
+                probs = clf.predict(frame)          # your head up/down CNN
+                g = gate.update(probs)
+            else:
+                probs = (0.0, 0.0)                  # CNN not needed: saves CPU
+                gate.reset()
+                g, button = gestures.update(eye, brain.head.baseline)
+                gvals = gestures.values
 
             now = time.monotonic()
             fps = 0.9 * fps + 0.1 / max(now - last, 1e-3)
             last = now
 
-            st = brain.update(g, eye, probs, fps)
+            st = brain.update(g, eye, probs, fps, button, gvals)
             if brain.calibrating:
                 self.eye_sample.emit(eye, g == HEAD_DOWN)
             while brain.requests:
@@ -100,9 +110,19 @@ class Worker(QThread):
                 brain.calibrating = args[0]
                 brain.smoother.reset()
             elif cmd == "mapper":
-                brain.mapper = args[0]
-                brain.message = ""
+                from src.eyemouse.head_pointer import HeadMapper
+                if isinstance(args[0], HeadMapper):
+                    brain.head = args[0]
+                else:
+                    brain.mapper = args[0]
                 brain.smoother.reset()
+            elif cmd == "recenter":
+                brain.recenter()
+            elif cmd == "settings_changed":
+                brain.clicks.cancel()
+                brain.smoother.reset()
+                if CONFIG.control_mode == "head" and not brain.head.calibrated:
+                    brain.recenter()
 
     def stop(self):
         self.running = False
@@ -112,6 +132,7 @@ class Worker(QThread):
 class App:
     def __init__(self):
         self.qt = QApplication(sys.argv)
+        load_settings()
         self.overlay = Overlay()
         self.panel = ControlPanel()
         self.worker = Worker()
@@ -128,11 +149,14 @@ class App:
         p.start_stop.connect(self.toggle)
         p.recalibrate.connect(self.start_calibration)
         p.menu.connect(lambda: w.send("menu"))
+        p.recenter.connect(lambda: w.send("recenter"))
+        p.settings_changed.connect(lambda: w.send("settings_changed"))
         p.capture_hidden.connect(self.set_capture_hidden)
         p.quit_app.connect(self.quit)
         h.toggle.connect(self.toggle)
         h.menu.connect(lambda: w.send("menu"))
         h.recal.connect(self.start_calibration)
+        h.recenter.connect(lambda: w.send("recenter"))
         h.quit.connect(self.quit)
 
     def run(self):
@@ -172,7 +196,7 @@ class App:
         if self.calib is not None:
             return
         self.worker.send("calibrating", True)
-        self.calib = CalibrationWindow()
+        self.calib = CalibrationWindow(kind=CONFIG.control_mode)
         self.worker.eye_sample.connect(self.calib.add_sample)
         self.calib.finished.connect(self._calibration_done)
         self.calib.show()
@@ -191,6 +215,7 @@ class App:
         self.calib = None
 
     def quit(self):
+        save_settings()
         Hotkeys.stop()
         self.worker.stop()
         self.qt.quit()
