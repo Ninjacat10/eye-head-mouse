@@ -1,8 +1,13 @@
 import cv2
+
 from .config import CONFIG
 
+
 class Camera:
+    """Wraps the webcam so the rest of the app just calls read()."""
+
     def __init__(self, index=CONFIG.camera_index):
+        # CAP_DSHOW = DirectShow backend, opens much faster on Windows
         self.cap = cv2.VideoCapture(index, cv2.CAP_DSHOW)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, CONFIG.frame_width)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CONFIG.frame_height)
@@ -11,15 +16,18 @@ class Camera:
             raise RuntimeError(f"Could not open camera {index}")
 
     def read(self):
+        """Return one mirrored BGR frame, or None if the grab failed."""
         ok, frame = self.cap.read()
         if not ok:
             return None
-        return cv2.flip(frame, 1)
+        return cv2.flip(frame, 1)  # mirror so left is left
 
     def release(self):
         self.cap.release()
 
+
 if __name__ == "__main__":
+    # Self-test: python -m src.eyemouse.camera  (press Q to quit)
     cam = Camera()
     while True:
         frame = cam.read()

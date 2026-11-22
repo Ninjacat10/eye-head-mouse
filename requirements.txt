@@ -1,8 +1,8 @@
-opencv-python==4.10.0.84
+﻿opencv-python==4.10.0.84
 mediapipe==0.10.21
 tensorflow==2.18.0
 numpy<2.1
 PyQt6==6.7.1
-pyautogui==0.9.54
+pynput==1.7.7
 keyboard==0.13.5
 pywin32==308
