@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+calibration.json
+*.log
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
